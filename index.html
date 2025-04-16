@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tornado Outbreak Indicator Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        header {
+            background-color: #003366;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .container {
+            background-color: white;
+            border-radius: 0 0 8px 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .input-section {
+            margin-bottom: 25px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: block;
+            margin: 20px auto;
+            width: 200px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .results {
+            background-color: #f8f8f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .results h2 {
+            margin-top: 0;
+            color: #003366;
+        }
+        .value-display {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        .value-box {
+            background-color: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            width: 30%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        .value-box h3 {
+            margin-top: 0;
+            color: #003366;
+        }
+        .value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .toi {
+            color: #9c27b0;
+        }
+        .probability {
+            color: #e91e63;
+        }
+        .riv {
+            color: #2196f3;
+        }
+        .recommendation {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .high-risk {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid #ffcdd2;
+        }
+        .low-risk {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        .parameter-tables {
+            margin-top: 30px;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        th.highlighted {
+            background-color: #212121;
+            color: white;
+        }
+        .highlight {
+            background-color: #e3f2fd;
+            font-weight: bold;
+        }
+        .title-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .forecast-date {
+            font-size: 14px;
+        }
+        .east-west-selector {
+            margin: 20px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .east-west-selector h3 {
+            margin-top: 0;
+            color: #003366;
+            text-align: center;
+        }
+        .distance-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 2px;
+            margin-top: 10px;
+        }
+        .distance-cell {
+            padding: 10px 5px;
+            text-align: center;
+            background-color: #e8f5e9;
+            border: 1px solid #ccc;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        .distance-cell:hover {
+            background-color: #c8e6c9;
+        }
+        .distance-cell.selected {
+            background-color: #212121;
+            color: white;
+            font-weight: bold;
+        }
+        .distance-cell.west {
+            background-color: #e3f2fd;
+        }
+        .distance-cell.east {
+            background-color: #fff3e0;
+        }
+        .direction-label {
+            text-align: center;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="title-section">
+            <h1>Tornado Outbreak Indicator (TOI) Tool</h1>
+            <div class="forecast-date">
+                <span id="current-date"></span>
+            </div>
+        </div>
+        <p>Based on OMEGA team research (1965-2023)</p>
+    </header>
+    
+    <div class="container">
+        <div class="east-west-selector">
+            <h3>East/West Distance</h3>
+            <div class="direction-label">
+                <span>WEST</span>
+                <span style="float: right;">EAST</span>
+            </div>
+            <div class="distance-grid">
+                <div class="distance-cell west" data-value="w-200plus">> 200 mi<br>W</div>
+                <div class="distance-cell west" data-value="w-160-200">160-200 mi<br>W</div>
+                <div class="distance-cell west" data-value="w-120-160">120-160 mi<br>W</div>
+                <div class="distance-cell west" data-value="w-80-120">80-120 mi<br>W</div>
+                <div class="distance-cell west" data-value="w-40-80">40-80 mi<br>W</div>
+                <div class="distance-cell west" data-value="w-0-40">0-40 mi<br>W</div>
+                <div class="distance-cell east" data-value="e-0-40">0-40 mi<br>E</div>
+                <div class="distance-cell east" data-value="e-40-80">40-80 mi<br>E</div>
+                <div class="distance-cell east" data-value="e-80-120">80-120 mi<br>E</div>
+                <div class="distance-cell east" data-value="e-120-160">120-160 mi<br>E</div>
+                <div class="distance-cell east" data-value="e-160-200">160-200 mi<br>E</div>
+                <div class="distance-cell east" data-value="e-200plus">> 200 mi<br>E</div>
+            </div>
+            <input type="hidden" id="east-west-distance" value="">
+        </div>
+        
+        <div class="input-section">
+            <div>
+                <div class="input-group">
+                    <label for="jet-speed">500mb Jet Translation Speed (knots):</label>
+                    <input type="number" id="jet-speed" min="0" max="100" value="45">
+                </div>
+                
+                <div class="input-group">
+                    <label for="direction">Direction from Outbreak Centroid (degrees):</label>
+                    <input type="number" id="direction" min="0" max="360" value="270">
+                </div>
+                
+                <div class="input-group">
+                    <label for="distance">Total Distance from Outbreak Centroid (nm):</label>
+                    <input type="number" id="distance" min="0" max="500" value="150">
+                </div>
+            </div>
+            
+            <div>
+                <div class="input-group">
+                    <label for="max-speed">500mb Jet Max Speed (knots):</label>
+                    <input type="number" id="max-speed" min="0" max="200" value="90">
+                </div>
+                
+                <div class="input-group">
+                    <label for="month">Month of Analysis:</label>
+                    <select id="month">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label for="stp">Peak Forecast STP in Expected Tornado Risk Area:</label>
+                    <input type="number" id="stp" min="0" max="15" step="0.1" value="5.5">
+                </div>
+            </div>
+        </div>
+        
+        <button id="calculate-btn">Calculate TOI</button>
+        
+        <div class="results" id="results-section" style="display: none;">
+            <h2>Analysis Results</h2>
+            
+            <div class="value-display">
+                <div class="value-box">
+                    <h3>TOI Value</h3>
+                    <div class="value toi" id="toi-value">0.00</div>
+                </div>
+                
+                <div class="value-box">
+                    <h3>High Risk Probability</h3>
+                    <div class="value probability" id="probability-value">0.0%</div>
+                </div>
+                
+                <div class="value-box">
+                    <h3>Expected RIV</h3>
+                    <div class="value riv" id="riv-value">0</div>
+                </div>
+            </div>
+            
+            <div class="recommendation" id="recommendation"></div>
+            <div id="validityPeriod" style="margin-top: 10px; font-style: italic;">Valid for 00Z Day 1 Outlook</div>
+        </div>
+
+        <div class="parameter-tables">
+            <h3>TOI Parameter Reference Tables</h3>
+            
+            <h4>500mb Jet Translation Speed Impact</h4>
+            <table>
+                <tr>
+                    <th>&lt; 30 kts</th>
+                    <th>31 kts</th>
+                    <th>32 kts</th>
+                    <th>33 kts</th>
+                    <th>34 kts</th>
+                    <th>35 kts</th>
+                    <th>36 kts</th>
+                    <th>...</th>
+                    <th>45 kts</th>
+                    <th>...</th>
+                    <th>60 kts</th>
+                </tr>
+                <tr>
+                    <td>-3.0</td>
+                    <td>-2.5</td>
+                    <td>-2.0</td>
+                    <td>-1.5</td>
+                    <td>-1.0</td>
+                    <td>-0.5</td>
+                    <td>0.0</td>
+                    <td>...</td>
+                    <td>+1.0</td>
+                    <td>...</td>
+                    <td>+2.0</td>
+                </tr>
+            </table>
+            
+            <h4>Direction from Outbreak Centroid Impact (500mb Jet)</h4>
+            <table>
+                <tr>
+                    <th>0°-10°</th>
+                    <th>11°-45°</th>
+                    <th>46°-90°</th>
+                    <th>91°-135°</th>
+                    <th>136°-180°</th>
+                    <th>181°-225°</th>
+                    <th>226°-270°</th>
+                    <th>271°-315°</th>
+                    <th>316°-360°</th>
+                </tr>
+                <tr>
+                    <td>-2.0</td>
+                    <td>-1.0</td>
+                    <td>-0.5</td>
+                    <td>0.0</td>
+                    <td>+0.5</td>
+                    <td>+1.0</td>
+                    <td>+1.5</td>
+                    <td>+2.0</td>
+                    <td>-1.5</td>
+                </tr>
+            </table>
+            
+            <h4>Distance from Outbreak Centroid Impact</h4>
+            <table>
+                <tr>
+                    <th>0-50 nm</th>
+                    <th>51-100 nm</th>
+                    <th>101-150 nm</th>
+                    <th>151-200 nm</th>
+                    <th>201-250 nm</th>
+                    <th>251-300 nm</th>
+                    <th>301-350 nm</th>
+                    <th>&gt; 350 nm</th>
+                </tr>
+                <tr>
+                    <td>+2.0</td>
+                    <td>+1.5</td>
+                    <td>+1.0</td>
+                    <td>+0.5</td>
+                    <td>0.0</td>
+                    <td>-0.5</td>
+                    <td>-1.0</td>
+                    <td>-2.0</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current date
+            const now = new Date();
+            document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            
+            // Set default month to current month
+            document.getElementById('month').value = now.getMonth() + 1;
+            
+            // East/West Distance selector
+            const distanceCells = document.querySelectorAll('.distance-cell');
+            distanceCells.forEach(cell => {
+                cell.addEventListener('click', function() {
+                    // Remove selected class from all cells
+                    distanceCells.forEach(c => c.classList.remove('selected'));
+                    
+                    // Add selected class to clicked cell
+                    this.classList.add('selected');
+                    
+                    // Store the value
+                    document.getElementById('east-west-distance').value = this.dataset.value;
+                });
+            });
+            
+            // Default to a centered position
+            document.querySelector('[data-value="w-0-40"]').click();
+            
+            document.getElementById('calculate-btn').addEventListener('click', calculateTOI);
+            
+            function calculateTOI() {
+                // Get input values
+                const jetSpeed = parseFloat(document.getElementById('jet-speed').value);
+                const direction = parseFloat(document.getElementById('direction').value);
+                const distance = parseFloat(document.getElementById('distance').value);
+                const maxSpeed = parseFloat(document.getElementById('max-speed').value);
+                const month = parseInt(document.getElementById('month').value);
+                const stp = parseFloat(document.getElementById('stp').value);
+                const eastWestDistance = document.getElementById('east-west-distance').value;
+                
+                // Check if all required inputs are provided
+                if (!eastWestDistance) {
+                    alert("Please select an East/West Distance range");
+                    return;
+                }
+                
+                // Calculate TOI based on parameters
+                let toi = 0;
+                
+                // 1. Jet translation speed component
+                if (jetSpeed >= 45) {
+                    toi += 1.0 + (jetSpeed - 45) * 0.05; // Increases as speed increases above 45
+                } else if (jetSpeed >= 36) {
+                    toi += (jetSpeed - 36) * 0.12; // Gradual increase from 36 to 45
+                } else if (jetSpeed >= 30) {
+                    toi += -3.0 + (jetSpeed - 30) * 0.5; // Increase from 30 to 36
+                } else {
+                    toi -= 3.0; // Below 30 knots
+                }
+                
+                // 2. Direction component
+                if (direction > 0 && direction <= 10) {
+                    toi -= 2.0;
+                } else if (direction <= 45) {
+                    toi -= 1.0;
+                } else if (direction <= 90) {
+                    toi -= 0.5;
+                } else if (direction <= 135) {
+                    toi += 0.0;
+                } else if (direction <= 180) {
+                    toi += 0.5;
+                } else if (direction <= 225) {
+                    toi += 1.0;
+                } else if (direction <= 270) {
+                    toi += 1.5;
+                } else if (direction <= 315) {
+                    toi += 2.0;
+                } else {
+                    toi -= 1.5;
+                }
+                
+                // 3. Distance component
+                if (distance <= 50) {
+                    toi += 2.0;
+                } else if (distance <= 100) {
+                    toi += 1.5;
+                } else if (distance <= 150) {
+                    toi += 1.0;
+                } else if (distance <= 200) {
+                    toi += 0.5;
+                } else if (distance <= 250) {
+                    toi += 0.0;
+                } else if (distance <= 300) {
+                    toi -= 0.5;
+                } else if (distance <= 350) {
+                    toi -= 1.0;
+                } else {
+                    toi -= 2.0;
+                }
+                
+                // 4. East/West distance component
+                if (eastWestDistance === 'w-200plus') {
+                    toi -= 1.0;
+                } else if (eastWestDistance === 'w-160-200') {
+                    toi += 0.5;
+                } else if (eastWestDistance === 'w-120-160') {
+                    toi += 1.0;
+                } else if (eastWestDistance === 'w-80-120') {
+                    toi += 1.5;
+                } else if (eastWestDistance === 'w-40-80') {
+                    toi += 2.0;
+                } else if (eastWestDistance === 'w-0-40') {
+                    toi += 1.5;
+                } else if (eastWestDistance === 'e-0-40') {
+                    toi += 1.0;
+                } else if (eastWestDistance === 'e-40-80') {
+                    toi += 0.5;
+                } else if (eastWestDistance === 'e-80-120') {
+                    toi += 0.0;
+                } else if (eastWestDistance === 'e-120-160') {
+                    toi -= 0.5;
+                } else if (eastWestDistance === 'e-160-200') {
+                    toi -= 1.0;
+                } else if (eastWestDistance === 'e-200plus') {
+                    toi -= 1.5;
+                }
+                
+                // 5. Max speed component
+                if (maxSpeed >= 90) {
+                    toi += 1.0;
+                } else if (maxSpeed >= 70) {
+                    toi += 0.5;
+                } else if (maxSpeed < 60) {
+                    toi -= 1.0;
+                }
+                
+                // 6. Seasonal adjustment (summer months)
+                if (month >= 6 && month <= 8) {  // June, July, August
+                    if (month === 7) {  // July adjustment is stronger
+                        toi -= 1.5;
+                        if (jetSpeed < 40) {
+                            toi -= 1.0; // Additional penalty for slow jets in July
+                        }
+                    } else {
+                        toi -= 0.75; // June, August adjustment
+                    }
+                }
+                
+                // 7. STP contribution
+                toi += stp * 0.4;
+                
+                // Calculate probability based on TOI
+                let probability = 0;
+                if (toi < 0) {
+                    probability = 5;
+                } else if (toi < 2) {
+                    probability = 20 + toi * 10;
+                } else if (toi < 4) {
+                    probability = 40 + (toi - 2) * 15;
+                } else if (toi < 6) {
+                    probability = 70 + (toi - 4) * 7.5;
+                } else {
+                    probability = 85 + (toi < 8 ? (toi - 6) * 5 : 10);
+                }
+                
+                // Cap probability at 95%
+                probability = Math.min(95, probability);
+                
+                // Expected RIV calculation
+                let expectedRIV = 0;
+                if (toi < 2) {
+                    expectedRIV = 1;
+                } else if (toi < 4) {
+                    expectedRIV = 2 + Math.floor((toi - 2) * 1.5);
+                } else {
+                    expectedRIV = 4 + Math.floor((toi - 4) * 2);
+                }
+                expectedRIV = Math.min(15, expectedRIV);
+                
+                // Display results
+                document.getElementById('toi-value').textContent = toi.toFixed(2);
+                document.getElementById('probability-value').textContent = probability.toFixed(1) + '%';
+                document.getElementById('riv-value').textContent = expectedRIV;
+                
+                // Show recommendation
+                const recommendation = document.getElementById('recommendation');
+                if (probability > 50) {
+                    recommendation.textContent = 'RECOMMENDATION: Consider issuing a High Risk. The probability of verifying High Risk is greater than 50%.';
+                    recommendation.className = 'recommendation high-risk';
+                } else {
+                    recommendation.textContent = 'RECOMMENDATION: High Risk is not strongly indicated. The probability of verifying High Risk is less than 50%.';
+                    recommendation.className = 'recommendation low-risk';
+                }
+                
+                // Show results section
+                document.getElementById('results-section').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
